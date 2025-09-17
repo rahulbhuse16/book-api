@@ -32,23 +32,39 @@ export const getBooks = async (req, res) => {
   }
 };
 
-// 🔎 Search Books with Pagination
+
+
 export const searchBooks = async (req, res) => {
   try {
     const query = req.query.query || "";
+    const genre = req.query.genre || "";   // filter by genre
+    const status = req.query.status || ""; // filter by status
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
     const skip = (page - 1) * limit;
 
-    const searchCondition = {
+    // Base search condition
+    let searchCondition = {
       $or: [
         { title: { $regex: query, $options: "i" } },
         { author: { $regex: query, $options: "i" } }
       ]
     };
 
+    // Add genre filter if provided
+    if (genre) {
+      searchCondition.genre = genre;
+    }
+
+    // Add status filter if provided
+    if (status) {
+      searchCondition.status = status;
+    }
+
     const total = await Book.countDocuments(searchCondition);
-    const books = await Book.find(searchCondition).skip(skip).limit(limit);
+    const books = await Book.find(searchCondition)
+      .skip(skip)
+      .limit(limit);
 
     res.json({
       total,
@@ -56,6 +72,8 @@ export const searchBooks = async (req, res) => {
       pageSize: limit,
       totalPages: Math.ceil(total / limit),
       query,
+      genre,
+      status,
       data: books
     });
   } catch (err) {
